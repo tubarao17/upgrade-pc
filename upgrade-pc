@@ -1,66 +1,170 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Upgrade PC - Orçamento</title>
-    <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
-        .item { background: #1e1e1e; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; }
-        .total { font-size: 1.5rem; font-weight: bold; color: #00ff88; margin-top: 20px; }
-        input { padding: 10px; border-radius: 5px; border: none; width: 200px; }
-        button { padding: 10px; background: #00ff88; border: none; cursor: pointer; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upgrade PC – Completo</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0f1220; color:#fff; margin:0; padding:16px }
+    h1 { text-align:center; margin-bottom:20px }
+    .container { max-width:1100px; margin:auto }
+    .card { background:#181c3a; border-radius:16px; padding:16px; margin-bottom:16px }
+    .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center }
+    select, input, button { padding:10px; border-radius:10px; border:none }
+    button { background:#4da3ff; font-weight:bold; cursor:pointer }
+    button:disabled { background:#555; cursor:not-allowed }
+    .price { font-size:18px; font-weight:bold }
+    .off { color:#ff6b6b }
+    .on { color:#2ecc71 }
+    .total { font-size:28px; text-align:right; margin-top:20px }
+    @media (max-width: 600px) {
+      .row { flex-direction:column; align-items:flex-start }
+      .total { text-align:left }
+    }
+  </style>
 </head>
 <body>
+<div class="container">
+  <h1>🛠️ Monte seu Upgrade</h1>
 
-    <h1>Meu Upgrade - 2026</h1>
-    
-    <div id="lista-pecas"></div>
+  <div class="card">
+    <h3>Processador</h3>
+    <select id="cpu"></select>
+    <p class="price" id="cpuPrice"></p>
+    <p id="cpuStock"></p>
+    <a id="cpuLink" target="_blank">Comprar</a>
+  </div>
 
-    <div style="margin-top: 20px;">
-        <input type="text" id="cupomInput" placeholder="Digite o cupom (ex: PROMO10)">
-        <button onclick="aplicarCupom()">Aplicar Cupom</button>
-    </div>
+  <div class="card">
+    <h3>Placa de vídeo</h3>
+    <select id="gpu"></select>
+    <p class="price" id="gpuPrice"></p>
+    <p id="gpuStock"></p>
+    <a id="gpuLink" target="_blank">Comprar</a>
+  </div>
 
-    <div class="total">Total: R$ <span id="valorTotal">0,00</span></div>
+  <div class="card">
+    <h3>Placa-mãe</h3>
+    <p class="price" id="mbPrice"></p>
+    <p id="mbStock"></p>
+    <a id="mbLink" target="_blank">Comprar</a>
+  </div>
 
-    <script>
-        const pecas = [
-            { nome: "Ryzen 5 5500X3D / 5600", preco: 950.00 },
-            { nome: "Placa Mãe B550 Maxsun Gaming WiFi", preco: 650.00 },
-            { nome: "Monitor LG UltraGear 27' 180Hz", preco: 1350.00 },
-            { nome: "RAM Kingston 2x16GB 3200MHz", preco: 520.00 }
-        ];
+  <div class="card">
+    <h3>Memória RAM</h3>
+    <p class="price" id="ramPrice"></p>
+    <p id="ramStock"></p>
+    <a id="ramLink" target="_blank">Comprar</a>
+  </div>
 
-        let desconto = 0;
+  <div class="card">
+    <h3>Monitor</h3>
+    <p class="price" id="monitorPrice"></p>
+    <p id="monitorStock"></p>
+    <a id="monitorLink" target="_blank">Comprar</a>
+  </div>
 
-        function renderizar() {
-            const lista = document.getElementById('lista-pecas');
-            lista.innerHTML = '';
-            let soma = 0;
+  <div class="card">
+    <h3>Cupom (R$)</h3>
+    <input type="number" id="cupom" value="0" />
+  </div>
 
-            pecas.forEach(p => {
-                let precoFinal = p.preco * (1 - desconto);
-                soma += precoFinal;
-                lista.innerHTML += `<div class="item"><span>${p.nome}</span> <span>R$ ${precoFinal.toFixed(2)}</span></div>`;
-            });
+  <div class="row">
+    <button onclick="copiarLista()">🛒 Copiar lista</button>
+    <button onclick="salvar()">💾 Salvar upgrade</button>
+  </div>
 
-            document.getElementById('valorTotal').innerText = soma.toFixed(2);
-        }
+  <div class="total" id="total"></div>
+</div>
 
-        function aplicarCupom() {
-            const cupom = document.getElementById('cupomInput').value.toUpperCase();
-            if (cupom === "PROMO10") {
-                desconto = 0.10; // 10% de desconto
-                alert("Cupom aplicado!");
-            } else {
-                desconto = 0;
-                alert("Cupom inválido.");
-            }
-            renderizar();
-        }
+<script>
+const API_URL = 'https://raw.githubusercontent.com/exemplo/precos-upgrade/main/precos.json'
+let DATA, lastPrices = JSON.parse(localStorage.getItem('lastPrices') || '{}')
 
-        renderizar();
-    </script>
+async function carregar() {
+  const res = await fetch(API_URL)
+  DATA = await res.json()
+
+  carregarSelect('cpu', DATA.cpus)
+  carregarSelect('gpu', DATA.gpus)
+
+  atualizarTudo()
+}
+
+function carregarSelect(id, items) {
+  const sel = document.getElementById(id)
+  sel.innerHTML = ''
+  items.forEach(i => {
+    const opt = document.createElement('option')
+    opt.value = i.id
+    opt.textContent = i.name
+    opt.disabled = !i.estoque
+    sel.appendChild(opt)
+  })
+}
+
+function atualizarTudo() {
+  atualizarItem('cpu')
+  atualizarItem('gpu')
+  atualizarSimples('motherboard', 'mb')
+  atualizarSimples('ram', 'ram')
+  atualizarSimples('monitor', 'monitor')
+  calcular()
+}
+
+function atualizarItem(tipo) {
+  const id = document.getElementById(tipo).value
+  const item = DATA[tipo + 's'].find(i => i.id === id)
+  document.getElementById(tipo + 'Price').innerText = `R$ ${item.price}`
+  document.getElementById(tipo + 'Link').href = item.link
+  document.getElementById(tipo + 'Stock').innerHTML = item.estoque ? '<span class="on">Em estoque</span>' : '<span class="off">Esgotado</span>'
+  if (lastPrices[id] && item.price < lastPrices[id]) alert(`🔥 ${item.name} baixou de preço!`)
+  lastPrices[id] = item.price
+  localStorage.setItem('lastPrices', JSON.stringify(lastPrices))
+}
+
+function atualizarSimples(key, prefix) {
+  const item = DATA[key]
+  document.getElementById(prefix + 'Price').innerText = `R$ ${item.price}`
+  document.getElementById(prefix + 'Link').href = item.link
+  document.getElementById(prefix + 'Stock').innerHTML = item.estoque ? '<span class="on">Em estoque</span>' : '<span class="off">Esgotado</span>'
+}
+
+function calcular() {
+  const cpu = DATA.cpus.find(c => c.id === document.getElementById('cpu').value)
+  const gpu = DATA.gpus.find(g => g.id === document.getElementById('gpu').value)
+  const cupom = Number(document.getElementById('cupom').value || 0)
+
+  let total = cpu.price + gpu.price + DATA.motherboard.price + DATA.ram.price + DATA.monitor.price - cupom
+  if (total < 0) total = 0
+
+  document.getElementById('total').innerText = `Total: R$ ${total.toLocaleString('pt-BR')}`
+}
+
+function copiarLista() {
+  const texto = `Upgrade PC:\nCPU: ${document.getElementById('cpu').selectedOptions[0].text}\nGPU: ${document.getElementById('gpu').selectedOptions[0].text}\nTotal: ${document.getElementById('total').innerText}`
+  navigator.clipboard.writeText(texto)
+  alert('📋 Lista copiada!')
+}
+
+function salvar() {
+  const data = {
+    cpu: document.getElementById('cpu').value,
+    gpu: document.getElementById('gpu').value,
+    cupom: document.getElementById('cupom').value
+  }
+  localStorage.setItem('upgrade', JSON.stringify(data))
+  alert('💾 Upgrade salvo no navegador')
+}
+
+window.onload = () => {
+  carregar()
+  const salvo = JSON.parse(localStorage.getItem('upgrade'))
+  if (salvo) {
+    document.getElementById('cupom').value = salvo.cupom || 0
+  }
+}
+</script>
 </body>
 </html>
+
