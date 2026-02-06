@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Upgrade PC - Orçamento</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        .item { background: #1e1e1e; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; }
+        .total { font-size: 1.5rem; font-weight: bold; color: #00ff88; margin-top: 20px; }
+        input { padding: 10px; border-radius: 5px; border: none; width: 200px; }
+        button { padding: 10px; background: #00ff88; border: none; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Meu Upgrade - 2026</h1>
+    
+    <div id="lista-pecas"></div>
+
+    <div style="margin-top: 20px;">
+        <input type="text" id="cupomInput" placeholder="Digite o cupom (ex: PROMO10)">
+        <button onclick="aplicarCupom()">Aplicar Cupom</button>
+    </div>
+
+    <div class="total">Total: R$ <span id="valorTotal">0,00</span></div>
+
+    <script>
+        const pecas = [
+            { nome: "Ryzen 5 5500X3D / 5600", preco: 950.00 },
+            { nome: "Placa Mãe B550 Maxsun Gaming WiFi", preco: 650.00 },
+            { nome: "Monitor LG UltraGear 27' 180Hz", preco: 1350.00 },
+            { nome: "RAM Kingston 2x16GB 3200MHz", preco: 520.00 }
+        ];
+
+        let desconto = 0;
+
+        function renderizar() {
+            const lista = document.getElementById('lista-pecas');
+            lista.innerHTML = '';
+            let soma = 0;
+
+            pecas.forEach(p => {
+                let precoFinal = p.preco * (1 - desconto);
+                soma += precoFinal;
+                lista.innerHTML += `<div class="item"><span>${p.nome}</span> <span>R$ ${precoFinal.toFixed(2)}</span></div>`;
+            });
+
+            document.getElementById('valorTotal').innerText = soma.toFixed(2);
+        }
+
+        function aplicarCupom() {
+            const cupom = document.getElementById('cupomInput').value.toUpperCase();
+            if (cupom === "PROMO10") {
+                desconto = 0.10; // 10% de desconto
+                alert("Cupom aplicado!");
+            } else {
+                desconto = 0;
+                alert("Cupom inválido.");
+            }
+            renderizar();
+        }
+
+        renderizar();
+    </script>
+</body>
+</html>
